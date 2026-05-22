@@ -1,0 +1,22 @@
+{
+  "$schema": "https://dl.viam.dev/module.schema.json",
+  "module_id": "viam-soleng:viam-xml-filereader",
+  "visibility": "public",
+  "url": "https://github.com/viam-soleng/viam-xml-filereader",
+  "description": "Viam sensor module which reads, parses an XML file and returns a JSON object",
+  "applications": null,
+  "markdown_link": "README.md",
+  "entrypoint": "bin/viam-xml-filereader",
+  "first_run": "",
+  "build": {
+    "build": "make module.tar.gz",
+    "setup": "make setup",
+    "path": "module.tar.gz",
+    "arch": [
+      "linux/amd64",
+      "linux/arm64",
+      "darwin/arm64",
+      "windows/amd64"
+    ]
+  }
+}
