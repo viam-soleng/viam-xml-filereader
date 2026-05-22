@@ -23,7 +23,8 @@ and supply the absolute path to the XML file to read:
 
 ```json
 {
-  "full-file-path": "/data/example.xml"
+  "full-file-path": "/data/example.xml",
+  "recursive-cdata": true
 }
 ```
 
