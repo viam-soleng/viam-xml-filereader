@@ -4,6 +4,13 @@
   "visibility": "public",
   "url": "https://github.com/viam-soleng/viam-xml-filereader",
   "description": "Viam sensor module which reads, parses an XML file and returns a JSON object",
+  "models": [
+    {
+      "api": "rdk:component:sensor",
+      "model": "viam-soleng:viam-xml-filereader:filereader",
+      "markdown_link": "viam-soleng_viam-xml-filereader_filereader.md"
+    }
+  ],
   "applications": null,
   "markdown_link": "README.md",
   "entrypoint": "bin/viam-xml-filereader",
