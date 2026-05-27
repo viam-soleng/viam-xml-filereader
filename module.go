@@ -2,13 +2,17 @@ package viamxmlfilereader
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	sensor "go.viam.com/rdk/components/sensor"
+	"go.viam.com/rdk/data"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 )
@@ -31,6 +35,10 @@ type Config struct {
 	// common pattern of stuffing a serialized inner XML document inside a
 	// CDATA section. Strings that fail to parse cleanly are kept as-is.
 	RecursiveCDATA bool `json:"recursive-cdata,omitempty"`
+	// UploadOnChangeOnly, when true, causes Readings to return
+	// data.ErrNoCaptureToStore if the file's MD5 hash has not changed
+	// since the last successful read.
+	UploadOnChangeOnly bool `json:"upload-on-change-only,omitempty"`
 }
 
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
@@ -47,6 +55,9 @@ type viamXmlFilereaderFilereader struct {
 	name   resource.Name
 	logger logging.Logger
 	cfg    *Config
+
+	hashMu   sync.Mutex
+	lastHash string
 
 	cancelCtx  context.Context
 	cancelFunc func()
@@ -87,6 +98,20 @@ func (s *viamXmlFilereaderFilereader) Readings(ctx context.Context, extra map[st
 		return nil, fmt.Errorf("failed to open XML file %q: %w", path, err)
 	}
 	defer f.Close()
+
+	if s.cfg.UploadOnChangeOnly {
+		hash, err := hashFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to hash XML file %q: %w", path, err)
+		}
+		s.hashMu.Lock()
+		unchanged := hash == s.lastHash
+		s.lastHash = hash
+		s.hashMu.Unlock()
+		if unchanged {
+			return nil, data.ErrNoCaptureToStore
+		}
+	}
 
 	opts := parseOpts{recursiveCDATA: s.cfg.RecursiveCDATA}
 	decoder := xml.NewDecoder(f)
@@ -172,6 +197,20 @@ func parseElement(decoder *xml.Decoder, start xml.StartElement, opts parseOpts) 
 			return result, nil
 		}
 	}
+}
+
+// hashFile returns the hex-encoded MD5 digest of the file at path.
+func hashFile(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func looksLikeXML(s string) bool {

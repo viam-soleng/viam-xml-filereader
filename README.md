@@ -24,16 +24,18 @@ and supply the absolute path to the XML file to read:
 ```json
 {
   "full-file-path": "/data/example.xml",
-  "recursive-cdata": true
+  "recursive-cdata": true,
+  "upload-on-change-only": true
 }
 ```
 
 ### Attributes
 
-| Name              | Type   | Inclusion | Description                                                          |
-|-------------------|--------|-----------|----------------------------------------------------------------------|
-| `full-file-path`  | string | Required  | Absolute path to the XML file to read on every call to `Readings()`. |
-| `recursive-cdata` | bool   | Optional  | Re-parse embedded XML strings (see below). Defaults to `false`.      |
+| Name | Type | Inclusion | Description |
+| --- | --- | --- | --- |
+| `full-file-path` | string | Required | Absolute path to the XML file to read on every call to `Readings()`. |
+| `recursive-cdata` | bool | Optional | Re-parse embedded XML strings (see below). Defaults to `false`. |
+| `upload-on-change-only` | bool | Optional | Skip captures when the file is unchanged (see below). Defaults to `false`. |
 
 When `recursive-cdata` is `true`, any text-only element value that looks
 like XML (starts with `<`, ends with `>`) is fed back through the parser
@@ -41,6 +43,13 @@ and replaced with the resulting structured object. This is the common
 case where a serialized inner XML document has been stuffed inside a
 `<![CDATA[...]]>` block. Strings that fail to parse cleanly are kept as
 the original raw string.
+
+When `upload-on-change-only` is `true`, each call to `Readings()` computes
+the MD5 hash of the file and compares it to the hash from the previous
+successful call. If the hash is unchanged, `Readings()` returns
+`data.ErrNoCaptureToStore` so the Viam Data Management service skips the
+capture. This avoids uploading duplicate snapshots when the underlying
+file is polled more frequently than it changes.
 
 ## Readings
 
